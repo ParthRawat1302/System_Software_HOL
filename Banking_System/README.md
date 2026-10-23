@@ -47,7 +47,7 @@ listed is implemented and covered by an automated test
 - ✅ Modify Customer/Employee Details · ✅ Manage User Roles (promote/demote Employee ↔ Manager, activate/deactivate staff)
 - ✅ Change Password · ✅ Logout · ✅ Exit
 
-The consolidated [project report](docs/report.html) includes the full
+The consolidated [project report](https://htmlpreview.github.io/?https://github.com/ParthRawat1302/System_Software_HOL/blob/main/Banking_System/docs/report.html) includes the full
 permission matrix, wire-protocol reference, and diagrams of the
 `Account`/`Staff`/`Admin`/`Loan`/`Feedback` data model.
 
