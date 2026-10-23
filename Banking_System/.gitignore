@@ -1,0 +1,44 @@
+Past_Work/
+
+# Local secrets and environment-specific configuration
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.*
+
+# Dependencies and virtual environments
+node_modules/
+venv/
+.venv/
+env/
+
+# Generated frontend output
+frontend/dist/
+frontend/build/
+
+# C build output
+engine/bankserver
+engine/bankclient
+engine/bankserver.exe
+engine/bankclient.exe
+*.o
+*.a
+*.so
+*.dll
+
+# Runtime banking records contain user/account data; never commit them
+engine/data/*.dat
+
+
+# Python caches, test/coverage output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+coverage/

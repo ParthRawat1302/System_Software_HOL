@@ -1,0 +1,832 @@
+<title>Ledger &amp; Lock</title>
+<style>
+  :root {
+    --paper: #F6F3EC;
+    --surface: #FFFFFF;
+    --surface-2: #EFEAE0;
+    --ink: #1B211F;
+    --ink-soft: #55594F;
+    --accent: #1F5C4D;
+    --accent-soft: #E4EEE9;
+    --gold: #93701F;
+    --gold-soft: #F1E7D0;
+    --danger: #9C3B2A;
+    --danger-soft: #F3E4DF;
+    --rule: #DAD3C2;
+    --code-ink: #2C3B36;
+    font-size: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14181A;
+      --surface: #1A1F21;
+      --surface-2: #20262A;
+      --ink: #E7E3D8;
+      --ink-soft: #A9AA9E;
+      --accent: #57B79C;
+      --accent-soft: #1C2B27;
+      --gold: #D6B463;
+      --gold-soft: #2B2415;
+      --danger: #E2795F;
+      --danger-soft: #2E1E1A;
+      --rule: #2B3134;
+      --code-ink: #CFE3DA;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #14181A;
+    --surface: #1A1F21;
+    --surface-2: #20262A;
+    --ink: #E7E3D8;
+    --ink-soft: #A9AA9E;
+    --accent: #57B79C;
+    --accent-soft: #1C2B27;
+    --gold: #D6B463;
+    --gold-soft: #2B2415;
+    --danger: #E2795F;
+    --danger-soft: #2E1E1A;
+    --rule: #2B3134;
+    --code-ink: #CFE3DA;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    text-wrap: balance;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  code, .mono, .stat-value, table.data td.num, .kbd {
+    font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .measure { max-width: 68ch; }
+
+  a { color: var(--accent); }
+
+  .wrap { max-width: 840px; margin: 0 auto; padding: 0 28px 100px; }
+
+  /* ---------- cover ---------- */
+  .cover {
+    background: linear-gradient(180deg, var(--accent-soft), var(--paper) 85%);
+    border-bottom: 1px solid var(--rule);
+    padding: 64px 28px 40px;
+  }
+  .cover-inner { max-width: 840px; margin: 0 auto; }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  .cover h1 {
+    font-size: clamp(2.1rem, 5vw, 3.1rem);
+    line-height: 1.08;
+    margin: 0 0 10px;
+  }
+  .cover .subtitle {
+    font-size: 1.1rem;
+    color: var(--ink-soft);
+    max-width: 56ch;
+    margin: 0 0 28px;
+  }
+  .rule-double {
+    height: 5px;
+    background: repeating-linear-gradient(to bottom, var(--accent) 0 1px, transparent 1px 4px);
+    opacity: 0.55;
+    margin: 22px 0 26px;
+  }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 18px;
+    font-size: 0.92rem;
+  }
+  .meta-grid dt {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 3px;
+  }
+  .meta-grid dd { margin: 0; color: var(--ink); }
+  .fill-in { color: var(--gold); border-bottom: 1px dashed var(--gold); }
+
+  /* ---------- toc ---------- */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 22px 26px;
+    margin: 40px 0 48px;
+  }
+  .toc h2 {
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+  }
+  .toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 32px; }
+  .toc li { break-inside: avoid; margin-bottom: 9px; }
+  .toc a {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    text-decoration: none;
+    color: var(--ink);
+    font-size: 0.94rem;
+  }
+  .toc a .fill { flex: 1; border-bottom: 1px dotted var(--rule); }
+  .toc a:hover { color: var(--accent); }
+
+  /* ---------- sections ---------- */
+  section { padding: 8px 0 44px; }
+  section h2 {
+    font-size: 1.5rem;
+    border-bottom: 2px solid var(--rule);
+    padding-bottom: 10px;
+    margin: 0 0 20px;
+  }
+  section h3 {
+    font-size: 1.12rem;
+    margin: 30px 0 10px;
+  }
+  p { margin: 0 0 14px; }
+  ul, ol { padding-left: 1.3em; }
+  li { margin-bottom: 6px; }
+
+  /* ---------- architecture diagram ---------- */
+  .arch {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 26px 0 10px;
+    overflow-x: auto;
+  }
+  .arch-box {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 16px 18px;
+    min-width: 175px;
+    flex: 1;
+  }
+  .arch-box h4 {
+    margin: 0 0 4px;
+    font-size: 0.98rem;
+    font-family: 'Source Serif 4', serif;
+  }
+  .arch-box p { margin: 0; font-size: 0.82rem; color: var(--ink-soft); }
+  .arch-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+    min-width: 120px;
+    text-align: center;
+  }
+  .arch-arrow .lbl {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+    white-space: nowrap;
+  }
+  .arch-arrow .glyph { font-size: 1.3rem; color: var(--accent); }
+
+  /* ---------- compliance table ---------- */
+  table.data {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    margin: 10px 0 6px;
+  }
+  table.data th {
+    text-align: left;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--rule);
+  }
+  table.data td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  table.data tr:last-child td { border-bottom: none; }
+  .letter {
+    font-family: 'IBM Plex Mono', monospace;
+    background: var(--surface-2);
+    border-radius: 5px;
+    padding: 1px 7px;
+    font-size: 0.82rem;
+  }
+  .status-pill {
+    display: inline-block;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 9px;
+    border-radius: 100px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .status-pill.done { background: var(--accent-soft); color: var(--accent); }
+
+  /* ---------- code block ---------- */
+  pre.code {
+    background: var(--surface-2);
+    color: var(--code-ink);
+    border-radius: 8px;
+    padding: 14px 18px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    border: 1px solid var(--rule);
+    margin: 12px 0 18px;
+  }
+
+  /* ---------- stat tiles ---------- */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    margin: 18px 0 8px;
+  }
+  .stat-tile {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .stat-tile .label {
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+  .stat-tile .stat-value {
+    font-size: 1.4rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+  }
+  .stat-tile.match .stat-value { color: var(--accent); }
+
+  /* ---------- finding cards ---------- */
+  .finding {
+    display: flex;
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+  }
+  .finding .stripe { width: 4px; border-radius: 3px; flex-shrink: 0; background: var(--danger); }
+  .finding.limitation .stripe { background: var(--gold); }
+  .finding-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .finding-head h4 { margin: 0; font-size: 1rem; font-family: 'Source Serif 4', serif; }
+  .badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 100px;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .finding.limitation .badge { background: var(--gold-soft); color: var(--gold); }
+  .finding p { margin: 0 0 8px; font-size: 0.93rem; }
+  .finding p:last-child { margin-bottom: 0; }
+  .finding .k { color: var(--ink-soft); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* ---------- screenshots ---------- */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+    margin: 18px 0;
+  }
+  figure { margin: 0; }
+  figure img {
+    width: 100%;
+    display: block;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  figcaption {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-top: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ---------- test summary ---------- */
+  .test-summary {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    background: var(--accent-soft);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 14px 0 20px;
+  }
+  .test-summary .big { font-size: 2rem; font-family: 'Source Serif 4', serif; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .test-summary .desc { font-size: 0.9rem; color: var(--ink-soft); }
+
+  footer {
+    max-width: 840px;
+    margin: 0 auto;
+    padding: 20px 28px 60px;
+    color: var(--ink-soft);
+    font-size: 0.82rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  @media print {
+    :root { --paper: #FFFFFF; --surface: #FFFFFF; --ink: #111; }
+    .cover { background: none; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<div class="cover">
+  <div class="cover-inner">
+    <p class="eyebrow">EG 301 &middot; Operating Systems Mini Project &middot; Submission Report</p>
+    <h1>Design &amp; Development of an Online Banking Management System</h1>
+    <p class="subtitle">A three-tier banking application whose account files, concurrency, and locking are implemented from first principles in C over raw sockets and system calls &mdash; with a from-scratch readers&ndash;writer lock, a security review, and a complete design and protocol reference.</p>
+    <div class="rule-double"></div>
+    <dl class="meta-grid">
+      <div><dt>Student</dt><dd class="fill-in">Parth Rawat</dd></div>
+      <div><dt>Roll No.</dt><dd class="fill-in">MT2026067</dd></div>
+      <div><dt>Course</dt><dd>EG 301 &mdash; Operating Systems</dd></div>
+    </dl>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <nav class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#objectives"><span>1. Objectives</span><span class="fill"></span></a></li>
+      <li><a href="#architecture"><span>2. System Architecture</span><span class="fill"></span></a></li>
+      <li><a href="#compliance"><span>3. Requirement Compliance</span><span class="fill"></span></a></li>
+      <li><a href="#os-concepts"><span>4. OS Concepts In Depth</span><span class="fill"></span></a></li>
+      <li><a href="#concurrency"><span>5. Concurrency Correctness</span><span class="fill"></span></a></li>
+      <li><a href="#security"><span>6. Security Review</span><span class="fill"></span></a></li>
+      <li><a href="#testing"><span>7. Testing &amp; Screenshots</span><span class="fill"></span></a></li>
+      <li><a href="#running"><span>8. Running The Project</span><span class="fill"></span></a></li>
+      <li><a href="#bottlenecks"><span>9. Bottlenecks &amp; Scalability</span><span class="fill"></span></a></li>
+      <li><a href="#design-reference"><span>10. Detailed System Design</span><span class="fill"></span></a></li>
+      <li><a href="#protocol-reference"><span>11. Engine Wire Protocol</span><span class="fill"></span></a></li>
+      <li><a href="#conclusion"><span>12. Future Work &amp; Conclusion</span><span class="fill"></span></a></li>
+    </ol>
+  </nav>
+
+  <section id="objectives">
+    <h2>1. Objectives</h2>
+    <p class="measure">The brief asked for a multi-user banking system where account and transaction data live in files, customer normal/joint accounts are protected by login, and Employee, Manager, and Administrator capabilities are enforced server-side. Joint accounts use read/write locking; a socket server handles multiple clients concurrently; and file management, locking, threads, and connection control use low-level POSIX mechanisms rather than a database or RPC framework.</p>
+    <p class="measure">On top of that brief, this implementation adds a React/FastAPI presentation layer without diluting the C engine's responsibility for any of the above, and treats "banking system" as license to hold the code to a security standard beyond what the assignment strictly requires: a dedicated security review found and fixed four real vulnerabilities, described in Section 6.</p>
+  </section>
+
+  <section id="architecture">
+    <h2>2. System Architecture</h2>
+    <p class="measure">The system is three separate processes, each owning one concern:</p>
+    <div class="arch">
+      <div class="arch-box">
+        <h4>React frontend</h4>
+        <p>Login screen, user menu, admin dashboard. Talks only to the gateway.</p>
+      </div>
+      <div class="arch-arrow"><span class="lbl">REST / JSON<br>+ tab session token</span><span class="glyph">&#8644;</span></div>
+      <div class="arch-box">
+        <h4>Python gateway</h4>
+        <p>FastAPI. Zero banking logic &mdash; translates JSON to the engine's wire protocol and back.</p>
+      </div>
+      <div class="arch-arrow"><span class="lbl">custom socket<br>protocol</span><span class="glyph">&#8644;</span></div>
+      <div class="arch-box">
+        <h4>C engine</h4>
+        <p>Owns accounts.dat, admins.dat, all locking, all concurrency, all IPC. Runs standalone.</p>
+      </div>
+    </div>
+    <p class="measure">This division matters for grading: the gateway is a deliberately "dumb" pipe (see <code>gateway/app/main.py</code>) so that every requirement in the brief is satisfiably demonstrated inside the C engine alone &mdash; <code>engine/bankclient</code> is a second, independent client that exercises the exact same protocol with no Python or browser involved.</p>
+
+    <h3>Data files</h3>
+    <p class="measure">Accounts and admins are stored as fixed-size binary records in <code>accounts.dat</code> / <code>admins.dat</code>, addressed directly by id (<code>offset = id &times; sizeof(record)</code>) &mdash; there is no index and no database library. A joint account is a single record holding two owner name/password-hash slots that share one balance field, which is what makes both holders' deposits and withdrawals contend on the exact same lock.</p>
+  </section>
+
+  <section id="compliance">
+    <h2>3. Requirement Compliance</h2>
+    <p class="measure">Each lettered item from the assignment brief, mapped to where it's implemented:</p>
+    <table class="data">
+      <tr><th>Item</th><th>Requirement</th><th>Implementation</th><th></th></tr>
+      <tr>
+        <td><span class="letter">a</span></td>
+        <td>Account/transaction data in files</td>
+        <td>Fixed-size records via <code>open()</code>/<code>pread()</code>/<code>pwrite()</code>; financial WAL and durable <code>ledger.dat</code> passbook</td>
+        <td><span class="status-pill done">done</span></td>
+      </tr>
+      <tr>
+        <td><span class="letter">b</span></td>
+        <td>Login system for account holders</td>
+        <td><code>OP_LOGIN</code>, checked against the stored password hash</td>
+        <td><span class="status-pill done">done</span></td>
+      </tr>
+      <tr>
+        <td><span class="letter">c</span></td>
+        <td>Password-protected admin access</td>
+        <td>Separate <code>admins.dat</code> + <code>ADMIN</code> login kind, gated role checks on every admin opcode</td>
+        <td><span class="status-pill done">done</span></td>
+      </tr>
+      <tr>
+        <td><span class="letter">d</span></td>
+        <td>Customer, Employee, Manager, and Administrator logins</td>
+        <td>Customer normal/joint account records, separate Employee and Manager ID ranges in <code>staff.dat</code>, and Administrator records in <code>admins.dat</code></td>
+        <td><span class="status-pill done">done</span></td>
+      </tr>
+      <tr>
+        <td><span class="letter">e</span></td>
+        <td>Admin add/delete/modify/search</td>
+        <td><code>OP_ADMIN_ADD/DELETE/MODIFY/SEARCH</code>, plus an added <code>OP_ADMIN_LIST</code></td>
+        <td><span class="status-pill done">done</span></td>
+      </tr>
+      <tr>
+        <td><span class="letter">f</span></td>
+        <td>Post-login menu (deposit/withdraw/balance/password/view/exit)</td>
+        <td>Implemented identically in <code>engine/bankclient</code> (CLI) and the React user dashboard</td>
+        <td><span class="status-pill done">done</span></td>
+      </tr>
+      <tr>
+        <td><span class="letter">g</span></td>
+        <td>Read lock for view, write lock for deposit/withdraw on joint accounts</td>
+        <td>Hand-rolled readers&ndash;writer lock, one per account &mdash; see Section 4</td>
+        <td><span class="status-pill done">done</span></td>
+      </tr>
+      <tr>
+        <td><span class="letter">h</span></td>
+        <td>Socket server, concurrent clients</td>
+        <td><code>socket()</code>/<code>bind()</code>/<code>listen()</code>/<code>accept()</code> + thread-per-client</td>
+        <td><span class="status-pill done">done</span></td>
+      </tr>
+      <tr>
+        <td><span class="letter">i</span></td>
+        <td>Raw syscalls: process, file, locking, threads, IPC</td>
+        <td><code>pread()</code>/<code>pwrite()</code>/<code>fdatasync()</code>, hand-rolled lock, <code>pthread_create()</code>, POSIX connection semaphore</td>
+        <td><span class="status-pill done">done</span></td>
+      </tr>
+    </table>
+  </section>
+
+  <section id="os-concepts">
+    <h2>4. OS Concepts In Depth</h2>
+
+    <h3>File locking, built from scratch</h3>
+    <p class="measure">The obvious way to satisfy item (g) is <code>fcntl()</code>/<code>flock()</code> record locking &mdash; but that <em>is</em> the OS's pre-built locking service, which defeats the point of a project about implementing OS mechanisms yourself. Instead, <code>engine/src/rwlock.c</code> hand-rolls the classic writer-priority readers&ndash;writers algorithm out of lower-level primitives: a mutex and two condition variables, not <code>pthread_rwlock_t</code> either.</p>
+    <pre class="code">void rwlock_acquire_write(RWLock *lock) {
+    pthread_mutex_lock(&amp;lock-&gt;mutex);
+    lock-&gt;waiting_writers++;
+    while (lock-&gt;active_writer || lock-&gt;active_readers &gt; 0)
+        pthread_cond_wait(&amp;lock-&gt;writer_ok, &amp;lock-&gt;mutex);
+    lock-&gt;waiting_writers--;
+    lock-&gt;active_writer = 1;
+    pthread_mutex_unlock(&amp;lock-&gt;mutex);
+}</pre>
+    <p class="measure">The lock table creates per-record <code>RWLock</code> entries on demand and removes idle entries when their final borrower releases them. Balance-reading opcodes (<code>BALANCE</code>, <code>VIEW_DETAILS</code>, <code>ADMIN_SEARCH</code>) take a read lock; anything that mutates a record takes a write lock for the entire read-modify-write sequence, which is exactly what prevents the lost-update race proven in Section 5.</p>
+
+    <h3>Multithreading &amp; process management, kept as separate mechanisms</h3>
+    <p class="measure">The server's <code>accept()</code> loop spawns a detached <code>pthread_create()</code> worker per client connection, with a POSIX counting semaphore limiting simultaneously served connections to 50. Each worker owns one connection and session; disconnect cleanup releases its session-guard slot and connection slot. The C engine is a modular single process; the Python gateway and React UI are separate processes, but neither contains banking rules.</p>
+
+    <h3>File management</h3>
+    <p class="measure">All record I/O goes through <code>pread()</code>/<code>pwrite()</code> rather than <code>fopen()</code>/<code>fread()</code>/<code>fwrite()</code> &mdash; and rather than <code>lseek()</code>+<code>read()</code>/<code>write()</code>, too. The account file's descriptor is shared across every client thread, so a seek-then-read pair could race against another thread's seek; positioned I/O makes each access atomic without needing a separate lock just to protect the file offset.</p>
+  </section>
+
+  <section id="concurrency">
+    <h2>5. Concurrency Correctness</h2>
+    <p class="measure">A correct-looking lock is not the same as a proven one. Both joint-account holders were made to fire 250 <code>+1</code> deposits each &mdash; 500 concurrent read-modify-write operations against the exact same record &mdash; and the final balance was checked against the arithmetic answer:</p>
+    <div class="stat-row">
+      <div class="stat-tile"><div class="label">Balance before</div><div class="stat-value">120.00</div></div>
+      <div class="stat-tile"><div class="label">Concurrent +1 deposits</div><div class="stat-value">500</div></div>
+      <div class="stat-tile match"><div class="label">Balance after (expected 620.00)</div><div class="stat-value">620.00</div></div>
+    </div>
+    <p class="measure">Zero lost updates across 500 overlapping write-lock acquisitions is the actual evidence that the hand-rolled lock's mutual exclusion is correct &mdash; not just that it compiles.</p>
+  </section>
+
+  <section id="security">
+    <h2>6. Security Review</h2>
+    <p class="measure">Because this is (nominally) a banking system, the engine was re-read specifically hunting for ways a client could corrupt data or bypass a check, not just whether the happy path worked. Four real issues were found and fixed; all are covered by dedicated regression tests.</p>
+
+    <div class="finding">
+      <div class="stripe"></div>
+      <div>
+        <div class="finding-head"><h4>NaN / Infinity balance injection</h4><span class="badge">found &amp; fixed</span></div>
+        <p><span class="k">Impact</span> &mdash; sending the literal string <code>"nan"</code> as a deposit amount permanently corrupted that account's balance to NaN, persisted to disk on the next write.</p>
+        <p><span class="k">Root cause</span> &mdash; <code>atof("nan")</code> returns NaN, and in C, <code>NaN &lt;= 0</code> is always false, so the guard <code>if (amount &lt;= 0) reject</code> never caught it. <code>"inf"</code> similarly set the balance to Infinity.</p>
+        <p><span class="k">Fix</span> &mdash; replaced <code>atof()</code> with <code>parse_amount()</code>, a <code>strtod()</code>-based parser that explicitly rejects non-finite results and trailing garbage (<code>engine/src/util.c</code>).</p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="stripe"></div>
+      <div>
+        <div class="finding-head"><h4>Delimiter injection / field shifting</h4><span class="badge">found &amp; fixed</span></div>
+        <p><span class="k">Impact</span> &mdash; a value containing the protocol's own <code>|</code> field separator silently shifted every field after it into the wrong slot, with no error returned (e.g. a value meant for one field ending up stored as another).</p>
+        <p><span class="k">Root cause</span> &mdash; <code>split_fields()</code> folds any extra <code>|</code> into the last field instead of rejecting the request.</p>
+        <p><span class="k">Fix</span> &mdash; every fixed-field opcode now checks the payload's exact <code>|</code> count before splitting at all, combined with an outright ban on <code>|</code>/<code>;</code> in any stored value.</p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="stripe"></div>
+      <div>
+        <div class="finding-head"><h4>No brute-force protection</h4><span class="badge">found &amp; fixed</span></div>
+        <p><span class="k">Impact</span> &mdash; login had no rate limiting; combined with small sequential account IDs, password guessing was unthrottled.</p>
+        <p><span class="k">Fix</span> &mdash; <code>engine/src/auth_guard.c</code> locks out an id for 30 seconds after 5 consecutive failed attempts, refusing further attempts <em>without even checking the password</em> &mdash; what actually stops a guessing loop, not just a delay.</p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="stripe"></div>
+      <div>
+        <div class="finding-head"><h4>Unnecessary network exposure</h4><span class="badge">found &amp; fixed</span></div>
+        <p><span class="k">Impact</span> &mdash; the engine listened on <code>0.0.0.0</code> (every interface) despite only ever needing to talk to the gateway on the same host.</p>
+        <p><span class="k">Fix</span> &mdash; bind changed to <code>127.0.0.1</code> only.</p>
+      </div>
+    </div>
+
+    <div class="finding limitation">
+      <div class="stripe"></div>
+      <div>
+        <div class="finding-head"><h4>No transport encryption; unsalted password hash</h4><span class="badge">known limitation</span></div>
+        <p><span class="k">Reasoning</span> &mdash; the wire protocol is plaintext, and passwords are hashed with a hand-rolled FNV-1a (no salt), chosen deliberately to avoid an external crypto/TLS library rather than for real security. Acceptable only for a loopback-only coursework demo; deployment on a real network would require TLS and a proper password KDF. See Section 12 for possible future work.</p>
+      </div>
+    </div>
+
+    <div class="finding limitation">
+      <div class="stripe"></div>
+      <div>
+        <div class="finding-head"><h4>Abandoned browser sessions</h4><span class="badge">found &amp; fixed</span></div>
+        <p><span class="k">Impact</span> &mdash; closing a browser tab without clicking "Exit" left its engine-side socket (and logged-in session) open forever.</p>
+        <p><span class="k">Fix</span> &mdash; the gateway now runs a background reaper thread (<code>session_store.start_reaper()</code>) that closes any session idle for more than 15 minutes.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="testing">
+    <h2>7. Testing &amp; Screenshots</h2>
+    <div class="test-summary">
+      <span class="big">76 / 76</span>
+      <span class="desc">automated protocol-level regression checks passed in the latest isolated run of <code>tests/test_engine.py</code>. Coverage includes role-specific seed logins and staff-ID migration, account operations, locking and transfer concurrency, session enforcement, and security checks.</span>
+    </div>
+    <p class="measure">The frontend was also driven end-to-end in a real (headless) browser, not just type-checked:</p>
+    <div class="gallery">
+      <figure>
+        <img src="ui-screenshots/login.png" alt="Updated banking login screen" loading="lazy">
+        <figcaption>fig. 1 &mdash; updated login screen</figcaption>
+      </figure>
+      <figure>
+        <img src="ui-screenshots/administrator-accounts.png" alt="Updated administrator account listing" loading="lazy">
+        <figcaption>fig. 2 &mdash; Employee account listing</figcaption>
+      </figure>
+      <figure>
+        <img src="ui-screenshots/customer-menu.png" alt="Updated customer dashboard menu" loading="lazy">
+        <figcaption>fig. 3 &mdash; customer menu</figcaption>
+      </figure>
+      <figure>
+        <img src="ui-screenshots/administrator-menu.png" alt="Updated administrator dashboard menu" loading="lazy">
+        <figcaption>fig. 4 &mdash; administrator dashboard</figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <section id="running">
+    <h2>8. Running The Project</h2>
+    <p class="measure">Full instructions are in the repository's <code>README.md</code>; in short:</p>
+    <pre class="code">cd engine &amp;&amp; make &amp;&amp; ./bankserver   # WSL/Linux &mdash; needs POSIX threads, semaphores, and sockets
+cd gateway &amp;&amp; uvicorn app.main:app --port 8077
+cd frontend &amp;&amp; npm install &amp;&amp; npm run dev</pre>
+    <p class="measure">The engine can be exercised entirely on its own with <code>engine/bankclient</code>, independent of Python or the browser &mdash; useful for demoing the raw socket protocol directly.</p>
+  </section>
+
+  <section id="bottlenecks">
+    <h2>9. Bottlenecks &amp; Scalability</h2>
+    <p class="measure">This is a single-process coursework system with fixed-size files and small configured record limits. The following constraints are visible in the current implementation; they are engineering bottlenecks to measure and address before increasing the workload, not claims that a particular production throughput has been achieved.</p>
+    <table class="data">
+      <tr><th>Constraint</th><th>Current behavior</th><th>Likely effect as workload grows</th><th>Practical next step</th></tr>
+      <tr>
+        <td>Serialized WAL writes</td>
+        <td><code>journal.c</code> protects WAL append and commit updates with one process-wide mutex; each PREPARE and COMMIT persistence calls <code>fdatasync()</code>.</td>
+        <td>Unrelated account transactions can hold distinct account locks, but still queue briefly for journal I/O. Slow storage or high write volume can make this shared journal path limit throughput.</td>
+        <td>Instrument mutex wait/hold time and sync latency first. If they dominate, implement group commit: batch independent durable log records into one sync while replying only after each transaction's commit is durable. Keep crash-recovery tests around every failure boundary.</td>
+      </tr>
+      <tr>
+        <td>Passbook history scan and visibility gate</td>
+        <td>A history request takes the ledger visibility gate exclusively, then scans <code>ledger.dat</code> backward until it finds up to 20 entries for the requested account. Writers hold the shared side of this gate for their financial transaction.</td>
+        <td>A history query blocks financial commits while it scans; as the ledger grows or account activity becomes sparse, the scan may traverse many unrelated entries and lengthen that pause.</td>
+        <td>Measure scan length and pause duration. Add a durable per-account ledger index or segmented ledger with a recovery-safe checkpoint; preserve the current committed-only history guarantee and validate index rebuilding after crashes.</td>
+      </tr>
+      <tr>
+        <td>Linear record allocation and fixed capacities</td>
+        <td>New customer, staff, loan, and feedback IDs are allocated by scanning for an empty/deleted slot. Configured maxima include 1,000 accounts, 200 IDs per staff role, 1,000 loans, and 1,000 feedback records.</td>
+        <td>Creation and role changes do more reads as slots become occupied; scans for loans and feedback are also used by listing workflows. Fixed capacities eventually reject new records.</td>
+        <td>Maintain a recovery-safe free-slot index or bitmap for the current file format. If capacity must grow substantially, migrate to an indexed storage engine with an explicit migration and backup/restore plan.</td>
+      </tr>
+      <tr>
+        <td>Per-record durable writes</td>
+        <td>Storage synchronizes each record write. A transfer updates two account records and two ledger records, in addition to its WAL prepare/commit syncs.</td>
+        <td>Durability is simple to reason about, but multiple sync calls per transaction can increase latency, particularly on slower disks or mounted Windows/WSL filesystems.</td>
+        <td>Benchmark on the intended filesystem before changing durability semantics. Consider group commit or carefully batched writes, and retain tests proving success is never acknowledged before the transaction is recoverable.</td>
+      </tr>
+      <tr>
+        <td>Thread-per-connection concurrency ceiling</td>
+        <td>The accept loop creates a detached thread per accepted connection and a semaphore limits active connections to 50; additional connections wait in the listen backlog.</td>
+        <td>Thread stacks and scheduling add overhead; 50 slow or idle connections can occupy all service slots and delay new users. Increasing the limit alone would increase resource use rather than fix the architecture.</td>
+        <td>Add connection/worker occupancy metrics and idle/read timeouts. If load tests justify it, move to a bounded worker pool or event-driven I/O while preserving per-session isolation and backpressure.</td>
+      </tr>
+    </table>
+    <p class="measure"><strong>How to verify a bottleneck:</strong> capture request latency percentiles, transaction throughput, WAL mutex wait and <code>fdatasync()</code> latency, ledger entries scanned per history request, worker/semaphore occupancy, and allocation scan lengths. Run repeatable tests at increasing concurrency and dataset sizes on the target filesystem. Compare before/after results and rerun crash-recovery, transfer-conservation, and session-isolation tests. The table describes code-derived pressure points; it does not substitute for those measurements.</p>
+  </section>
+
+  <section id="design-reference">
+    <h2>10. Detailed System Design</h2>
+    <p class="measure">This section consolidates the system architecture, record model, runtime modules, locking, transfer, recovery, and session behavior into this report. The UML-style diagrams describe C structs and modules conceptually; the implementation is procedural C, not an object-oriented class hierarchy.</p>
+
+    <h3>Architecture and runtime modules</h3>
+    <figure>
+      <img src="architecture.png" alt="React frontend, Python gateway, terminal client, and C banking engine architecture" style="width:100%;height:auto">
+      <figcaption>Web requests pass through the gateway; the terminal client connects directly to the engine.</figcaption>
+    </figure>
+    <figure>
+      <img src="runtime-class-diagram.png" alt="Runtime module and data relationships" style="width:100%;height:auto">
+      <figcaption>Runtime modules and their responsibilities.</figcaption>
+    </figure>
+    <p class="measure"><strong>React frontend</strong> sends REST/JSON requests to the <strong>FastAPI gateway</strong>. The gateway associates a tab-scoped session token with a persistent engine connection and translates requests to the engine's framed TCP protocol. The <strong>C engine</strong> owns authentication, authorization, account operations, record locking, storage, the WAL, and transaction history. <code>bankclient</code> is an independent terminal client that speaks the same protocol directly to the engine.</p>
+
+    <table class="data">
+      <tr><th>Area</th><th>Modules</th><th>Responsibility</th></tr>
+      <tr><td>Connection and dispatch</td><td><code>engine/src/server.c</code>, <code>engine/src/common/protocol.c</code></td><td>Loopback listener, bounded client workers, frame handling, role dispatch, and disconnect cleanup.</td></tr>
+      <tr><td>Authentication and access</td><td><code>roles/auth/auth.c</code>, <code>common/auth_guard.c</code>, <code>common/session_guard.c</code>, <code>common/role_access.c</code></td><td>Credential checks, failed-login throttling, one active session per identity, and server-side role policy.</td></tr>
+      <tr><td>Storage and synchronization</td><td><code>common/storage.c</code>, <code>common/lock_table.c</code>, <code>common/rwlock.c</code></td><td>Fixed-size file records, on-demand per-record lock registry, and readers-writer synchronization.</td></tr>
+      <tr><td>Banking operations</td><td><code>roles/customer/customer.c</code>, <code>roles/staff/employee.c</code>, <code>roles/staff/manager.c</code>, <code>roles/staff/shared.c</code>, <code>roles/admin/admin.c</code></td><td>Customer transactions, staff loan/account workflows, shared staff views, and administration.</td></tr>
+      <tr><td>Durability and passbook</td><td><code>common/journal.c</code></td><td>Financial WAL commit/recovery, loan WAL recovery, and committed ledger history.</td></tr>
+    </table>
+
+    <h3>Persistent data model</h3>
+    <p class="measure">Records are stored in fixed-size binary files under <code>engine/data/</code>. IDs address records directly; there is no database engine or secondary index. Positioned <code>pread()</code>/<code>pwrite()</code> avoid races on a shared file descriptor's current offset.</p>
+    <table class="data">
+      <tr><th>Record</th><th>File</th><th>Important fields and relationships</th></tr>
+      <tr><td><code>Account</code></td><td><code>accounts.dat</code></td><td><code>account_id</code>, normal/joint role, status, owner names and password hashes, shared balance. A joint account has two owners sharing one balance.</td></tr>
+      <tr><td><code>Staff</code></td><td><code>staff.dat</code></td><td>Staff ID, Employee/Manager role, status, name, password hash. Employee IDs use slots 1..MAX_STAFF; Manager IDs use a separate range MAX_STAFF+1..2*MAX_STAFF, so each role can independently have ID 1.</td></tr>
+      <tr><td><code>Admin</code></td><td><code>admins.dat</code></td><td>Administrator ID, status, name, and password hash.</td></tr>
+      <tr><td><code>Loan</code></td><td><code>loans.dat</code></td><td>Applicant account ID, amount, purpose, status, assigned Employee ID, and deciding staff ID. Zero assignment/decision IDs indicate those steps have not occurred.</td></tr>
+      <tr><td><code>Feedback</code></td><td><code>feedback.dat</code></td><td>Submitting account ID, status, review flag, and text.</td></tr>
+      <tr><td><code>LedgerEntry</code></td><td><code>ledger.dat</code></td><td>Transaction ID, timestamp, account ID, owner name, operation, amount, resulting balance, and optional counterparty account ID.</td></tr>
+      <tr><td>Financial journal</td><td><code>wal.dat</code></td><td>Before/after account images and ledger entries for atomic deposit, withdrawal, and transfer recovery.</td></tr>
+      <tr><td>Loan journal</td><td><code>loan_wal.dat</code></td><td>Atomic loan decision/disbursement updates, including loan, account, and passbook changes.</td></tr>
+    </table>
+    <p class="measure">Relationships are stored as IDs rather than pointers: <code>Loan.account_id</code> refers to the applicant account, and a ledger counterparty is another account ID. A transfer creates a debit and a credit ledger entry linked by the same transaction ID. Deleted accounts are soft-deleted so audit and historical records remain available.</p>
+
+    <h3>Record locking and concurrent access</h3>
+    <p class="measure">The engine does not use <code>fcntl()</code>/<code>flock()</code> or <code>pthread_rwlock_t</code> as the account lock implementation. Instead, <code>rwlock.c</code> implements a writer-priority readers-writer lock using a mutex and condition variables. <code>lock_table.c</code> creates locks on demand for account, staff, administrator, and loan records. Each caller holds a registry reference while waiting and using the lock; the final release removes and destroys an idle lock entry. Reads can coexist, while a writer excludes readers and other writers.</p>
+    <p class="measure">Account mutations hold a write lock for the full read-modify-write sequence. Unrelated records use distinct locks and can progress concurrently. Ledger append positions are reserved under a short mutex; a visibility lease prevents a passbook read from exposing an uncommitted transaction. The connection semaphore limits the engine to 50 served clients; it is separate from the per-identity session guard and per-record locks.</p>
+
+    <h3>Atomic transfers and deadlock avoidance</h3>
+    <figure>
+      <img src="transfer-sequence.png" alt="Transfer sequence showing account locks, WAL preparation, durable writes, and commit" style="width:100%;height:auto">
+      <figcaption>Both accounts are validated and updated while both write locks remain held.</figcaption>
+    </figure>
+    <ul>
+      <li><strong>Atomicity:</strong> the source debit, destination credit, and paired ledger entries are one journaled operation. Validation failures occur before changes are committed.</li>
+      <li><strong>Consistency:</strong> both accounts must be active, the source must have sufficient funds, and debit and credit amounts are equal.</li>
+      <li><strong>Isolation:</strong> both write locks are acquired before either balance is read and held until the transaction is resolved.</li>
+      <li><strong>Deadlock avoidance:</strong> transfer always takes account locks in ascending account-ID order, independent of transfer direction, preventing circular wait for opposite-direction transfers.</li>
+      <li><strong>Durability:</strong> journal and data writes are synchronized before a successful response is returned; recovery restores committed state after a crash.</li>
+    </ul>
+
+    <h3>Write-ahead logging and recovery</h3>
+    <figure>
+      <img src="wal-recovery.png" alt="WAL prepare, apply, commit, and recovery flow" style="width:100%;height:auto">
+      <figcaption>Recovery redoes committed operations and undoes operations left prepared.</figcaption>
+    </figure>
+    <p class="measure">A financial operation records a durable <code>PREPARED</code> journal entry containing before-images, after-images, and the intended ledger records before applying data-file updates. After account and ledger writes are durable, the engine persists <code>COMMITTED</code> and only then reports success. On startup, recovery redoes after-images for committed records and restores before-images/clears reserved ledger slots for incomplete prepared records. The journal append/commit sections are serialized only as needed to preserve log ordering; account locks remain per-record. Loan approval uses <code>loan_wal.dat</code> to commit the loan decision, account credit, and passbook entry together.</p>
+
+    <h3>Session lifecycle</h3>
+    <figure>
+      <img src="connection-sessions.png" alt="Connection and identity-session lifecycle, including logout and disconnect cleanup" style="width:100%;height:auto">
+      <figcaption>Identity guards are released on explicit logout or connection cleanup.</figcaption>
+    </figure>
+    <p class="measure">The engine's session guard permits one active session per identity: customer identity is keyed by account and joint-owner slot; Employee and Manager have distinct role-qualified keys; Admin uses its own ID. A second login for the same identity is rejected. Explicit <code>LOGOUT</code> releases the guard before the reply is sent. A dropped socket releases it through worker cleanup. For browser sessions, the gateway closes an abandoned engine connection after 15 minutes idle; its reaper checks periodically, so the effective wait can be slightly longer. React stores the opaque token in tab-scoped <code>sessionStorage</code> so separate tabs do not replace each other's sessions.</p>
+  </section>
+
+  <section id="protocol-reference">
+    <h2>11. Engine Wire Protocol</h2>
+    <p class="measure">The engine protocol is a small length-prefixed TCP protocol shared by the Python gateway and <code>bankclient</code>. It uses no RPC or serialization library.</p>
+    <pre class="code">[4-byte big-endian length][1-byte opcode][payload bytes...]</pre>
+    <p class="measure">The length includes the opcode byte and payload. Requests use a plain <code>|</code>-delimited payload; responses use <code>OK|&lt;data&gt;</code> or <code>ERR|&lt;reason&gt;</code> on the request's opcode. The engine listens on <code>127.0.0.1:9090</code>.</p>
+
+    <h3>Opcode reference</h3>
+    <table class="data">
+      <tr><th>Opcode</th><th>ID</th><th>Request payload</th><th>Successful response</th></tr>
+      <tr><td>LOGIN</td><td>1</td><td><code>KIND|id|password</code> (USER, EMPLOYEE, MANAGER, ADMIN; legacy STAFF means EMPLOYEE)</td><td>Welcome message</td></tr>
+      <tr><td>DEPOSIT</td><td>2</td><td><code>amount</code></td><td>New balance</td></tr>
+      <tr><td>WITHDRAW</td><td>3</td><td><code>amount</code></td><td>New balance</td></tr>
+      <tr><td>BALANCE</td><td>4</td><td>Empty</td><td>Current balance</td></tr>
+      <tr><td>CHANGE_PW</td><td>5</td><td><code>old_password|new_password</code></td><td>Password changed</td></tr>
+      <tr><td>VIEW_DETAILS</td><td>6</td><td>Empty</td><td>Account details as key/value fields</td></tr>
+      <tr><td>LOGOUT</td><td>7</td><td>Empty</td><td>Bye; session guard released before reply</td></tr>
+      <tr><td>ADMIN_ADD</td><td>8</td><td><code>role|owner1_name|owner1_pw|owner2_name|owner2_pw|initial_balance</code></td><td>New account ID</td></tr>
+      <tr><td>ADMIN_DELETE</td><td>9</td><td><code>account_id</code></td><td>Deleted (soft-close)</td></tr>
+      <tr><td>ADMIN_MODIFY</td><td>10</td><td><code>account_id|field|value</code></td><td>Modified</td></tr>
+      <tr><td>ADMIN_SEARCH</td><td>11</td><td><code>account_id</code></td><td>Account details as key/value fields</td></tr>
+      <tr><td>ADMIN_LIST</td><td>12</td><td>Empty</td><td>Semicolon-separated active account records</td></tr>
+      <tr><td>TXN_HISTORY</td><td>13</td><td>Empty for USER; target <code>account_id</code> for staff/admin</td><td>Latest 20 committed entries, newest first</td></tr>
+      <tr><td>TRANSFER</td><td>14</td><td><code>to_account_id|amount</code></td><td>Sender's new balance</td></tr>
+      <tr><td>LOAN_APPLY</td><td>15</td><td><code>amount|purpose</code></td><td>New loan ID</td></tr>
+      <tr><td>LOAN_MY_LIST</td><td>16</td><td>Empty</td><td>Caller's loan applications</td></tr>
+      <tr><td>LOAN_ASSIGNED_LIST</td><td>17</td><td>Empty</td><td>Assigned loans for Employee; all assigned loans for Admin</td></tr>
+      <tr><td>LOAN_DECIDE</td><td>18</td><td><code>loan_id|APPROVE</code> or <code>loan_id|REJECT</code></td><td>Approved or rejected</td></tr>
+      <tr><td>LOAN_ASSIGN</td><td>19</td><td><code>loan_id|employee_id</code></td><td>Assigned</td></tr>
+      <tr><td>FEEDBACK_ADD</td><td>20</td><td>Feedback text</td><td>New feedback ID</td></tr>
+      <tr><td>FEEDBACK_LIST</td><td>21</td><td>Empty</td><td>Feedback records</td></tr>
+      <tr><td>ACCOUNT_SET_STATUS</td><td>22</td><td><code>account_id|ACTIVE</code> or <code>account_id|INACTIVE</code></td><td>Updated</td></tr>
+      <tr><td>STAFF_ADD</td><td>23</td><td><code>EMPLOYEE|name|password</code> or <code>MANAGER|name|password</code></td><td>New staff ID in that role's namespace</td></tr>
+      <tr><td>STAFF_MODIFY</td><td>24</td><td><code>role|staff_id|field|value</code></td><td>Modified</td></tr>
+      <tr><td>STAFF_LIST</td><td>25</td><td>Empty</td><td>All staff records</td></tr>
+      <tr><td>LOAN_PENDING_LIST</td><td>26</td><td>Empty</td><td>Unassigned pending loans</td></tr>
+      <tr><td>LOAN_DECISION_HISTORY</td><td>27</td><td>Empty</td><td>Non-empty loans with status and assigned Employee</td></tr>
+    </table>
+    <p class="measure">List entries are semicolon-separated; fields within an entry are pipe-separated <code>key=value</code> pairs. Transaction-history entries are positional: <code>timestamp|account_id|owner|operation|amount|balance|counterparty</code>. Counterparty is <code>-</code> for deposit/withdrawal and the other account's ID for a transfer. For a joint account, the owner field records which holder performed the transaction.</p>
+
+    <h3>Role authorization matrix</h3>
+    <table class="data">
+      <tr><th>Capability</th><th>Customer</th><th>Employee</th><th>Manager</th><th>Admin</th></tr>
+      <tr><td>Deposit, withdraw, transfer, balance, apply for loan, add feedback</td><td>Own account</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td>Add/modify/search/list customer accounts</td><td>&mdash;</td><td>Yes</td><td>Search/list only</td><td>Yes</td></tr>
+      <tr><td>Close customer account</td><td>&mdash;</td><td>Yes</td><td>&mdash;</td><td>Yes</td></tr>
+      <tr><td>View any customer's transaction history</td><td>&mdash;</td><td>Yes</td><td>&mdash;</td><td>Yes</td></tr>
+      <tr><td>View assigned loans and decide</td><td>&mdash;</td><td>Assigned loans only</td><td>&mdash;</td><td>All assigned loans</td></tr>
+      <tr><td>Assign loans, review feedback, change account status, view pending loans/history</td><td>&mdash;</td><td>&mdash;</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Add/modify staff; list staff</td><td>&mdash;</td><td>&mdash;</td><td>List only</td><td>Yes</td></tr>
+    </table>
+    <p class="measure">Authorization is enforced by the engine on every operation; the client-provided role or UI menu is never treated as an authority. Customer transaction and loan requests are scoped to the authenticated account. A customer can name a destination for a transfer but cannot use that destination to access its data or perform other operations.</p>
+
+    <h3>Protocol and storage invariants</h3>
+    <ul>
+      <li>Values cannot contain <code>|</code> or <code>;</code>; the protocol has no escaping mechanism. Fixed-field requests validate the exact delimiter count before splitting.</li>
+      <li>Amounts use a strict decimal parser that rejects non-finite numbers and trailing garbage; non-positive amounts are rejected.</li>
+      <li>After five consecutive failed logins for the same role and ID, further attempts are refused for 30 seconds without checking the password.</li>
+      <li>The engine binds to loopback only. The custom protocol is plaintext and is intended for local gateway/client communication, not an untrusted network.</li>
+      <li>Financial ledger entries are committed in the same WAL transaction as their account balance changes. Passbook history returns committed entries only.</li>
+      <li>Only one session per identity is permitted. On a joint account the two owner slots are separate identities; Employee and Manager ID namespaces are also distinct.</li>
+      <li>At most 50 client connections are served simultaneously. Additional connections wait in the listener backlog until a worker releases a semaphore slot.</li>
+      <li>Transfers lock both accounts in ascending ID order, preserving atomicity and avoiding opposite-direction deadlocks.</li>
+    </ul>
+  </section>
+
+  <section id="conclusion">
+    <h2>12. Future Work &amp; Conclusion</h2>
+    <p class="measure">The project demonstrates a complete local banking workflow with role-based access, concurrent record operations, WAL recovery, and a web interface. It is still a coursework prototype, not software suitable for real financial data. Future work should first address measured scaling constraints and operational safety, then strengthen deployment security:</p>
+    <ol class="measure">
+      <li><strong>Establish performance and reliability baselines.</strong> Add repeatable benchmarks and expose latency, sync, lock-wait, history-scan, and worker-occupancy metrics. Use the results to prioritize changes rather than guessing which component is limiting.</li>
+      <li><strong>Scale durable transaction logging.</strong> If WAL sync contention is confirmed, implement group commit with clear commit acknowledgements, bounded batching delay, and crash-injection tests at PREPARE, data-write, and COMMIT boundaries.</li>
+      <li><strong>Make passbook history scale with account activity.</strong> Add a rebuildable per-account ledger index or segmented ledger so a request for the latest entries does not scan unrelated historical transactions. Test index reconstruction against the authoritative ledger after interrupted writes.</li>
+      <li><strong>Improve connection handling.</strong> Add timeouts for idle and incomplete requests, operational visibility into the 50-connection semaphore, and a bounded worker pool if benchmarks show thread-per-connection overhead is material.</li>
+      <li><strong>Plan storage growth and recovery operations.</strong> Replace repeated free-slot scans with a recovery-safe allocation index; document and test backup, restore, data migration, and capacity upgrades. For substantially larger deployments, evaluate a transactional indexed database rather than extending flat files indefinitely.</li>
+      <li><strong>Harden authentication and deployment.</strong> Replace the demonstration FNV-1a password hash with a maintained password KDF and per-user salts; add transport protection and a proper secrets/configuration policy before exposing any service beyond loopback. Do not deploy the current demo credentials or protocol on an untrusted network.</li>
+      <li><strong>Automate regression checks.</strong> Run isolated Linux/WSL engine tests, frontend build/lint, and gateway checks in continuous integration. Keep tests isolated from developer data and add crash-recovery and backup/restore scenarios to the automated suite.</li>
+    </ol>
+    <p class="measure">These are concrete follow-ups to the limitations described in Section 9 and the security trade-offs in Section 6. They are proposed work, not features claimed to be implemented. Within its coursework scope, the current system provides an end-to-end banking flow while keeping core banking rules and durable account state inside the C engine.</p>
+  </section>
+
+</div>
+
+<footer>
+  Design &amp; Development of an Online Banking Management System &mdash; EG 301 Operating Systems Mini Project. Engine: C (POSIX). Gateway: Python/FastAPI. Frontend: React/Vite.
+</footer>
