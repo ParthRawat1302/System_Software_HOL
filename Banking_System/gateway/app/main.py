@@ -38,14 +38,6 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-def _start_session_reaper() -> None:
-    # Closes engine-side connections for browser sessions that were
-    # abandoned (tab closed, crash) without ever calling /api/logout, so
-    # they don't leak open sockets and logged-in engine sessions forever.
-    session_store.start_reaper()
-
-
 @app.on_event("shutdown")
 def _close_sessions_on_shutdown() -> None:
     # Particularly important with `uvicorn --reload`: the session store is
@@ -68,8 +60,12 @@ def require_session(request: Request) -> EngineConnection:
 def engine_call(conn: EngineConnection, opcode: int, payload: str = "") -> dict:
     try:
         raw = conn.request(opcode, payload)
-    except EngineError:
-        raise HTTPException(status_code=502, detail="engine connection lost")
+    except (EngineError, OSError):
+        session_store.drop_connection(conn)
+        raise HTTPException(
+            status_code=401,
+            detail="session expired or engine connection lost; please log in again",
+        )
     ok, rest = parse_status(raw)
     if not ok:
         raise HTTPException(status_code=400, detail=rest)

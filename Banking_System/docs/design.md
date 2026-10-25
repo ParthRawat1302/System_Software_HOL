@@ -570,11 +570,13 @@ if the frontend called `127.0.0.1:8000` while being served from
 be sent on the next request. `frontend/src/api.js` calls the gateway at
 `http://localhost:8077` specifically for this reason.
 
-A closed browser tab never calls `/api/logout`, which would otherwise
-leak that engine connection (and its logged-in session) forever.
-`gateway/app/session_store.py` runs a daemon thread (`start_reaper()`,
-launched from `main.py`'s startup hook) that closes any session idle for
-more than 15 minutes.
+A closed browser tab never calls `/api/logout`. The C engine closes its
+client socket after 10 seconds idle by default and releases the logged-in identity
+guard through normal connection cleanup. The gateway's in-memory token
+mapping is not independently expired; it is cleared on logout, replacement
+login, gateway shutdown, or the first request that detects the engine has
+closed the idle socket. The frontend then clears the tab token and returns
+to login.
 
 ## Security review
 

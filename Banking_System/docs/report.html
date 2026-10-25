@@ -592,8 +592,8 @@
       <div class="stripe"></div>
       <div>
         <div class="finding-head"><h4>Abandoned browser sessions</h4><span class="badge">found &amp; fixed</span></div>
-        <p><span class="k">Impact</span> &mdash; closing a browser tab without clicking "Exit" left its engine-side socket (and logged-in session) open forever.</p>
-        <p><span class="k">Fix</span> &mdash; the gateway now runs a background reaper thread (<code>session_store.start_reaper()</code>) that closes any session idle for more than 15 minutes.</p>
+        <p><span class="k">Impact</span> &mdash; closing a browser tab without clicking "Exit" could leave its engine-side socket (and logged-in session) open indefinitely.</p>
+        <p><span class="k">Fix</span> &mdash; the C engine now closes idle client sockets after 10 seconds by default; its worker cleanup releases the login guard and connection slot. The gateway does not run a separate session TTL; when a later request detects the expired socket, it removes the stale token mapping and the frontend returns to login.</p>
       </div>
     </div>
   </section>
@@ -666,9 +666,9 @@ cd frontend &amp;&amp; npm install &amp;&amp; npm run dev</pre>
       </tr>
       <tr>
         <td>Thread-per-connection concurrency ceiling</td>
-        <td>The accept loop creates a detached thread per accepted connection and a semaphore limits active connections to 50; additional connections wait in the listen backlog.</td>
-        <td>Thread stacks and scheduling add overhead; 50 slow or idle connections can occupy all service slots and delay new users. Increasing the limit alone would increase resource use rather than fix the architecture.</td>
-        <td>Add connection/worker occupancy metrics and idle/read timeouts. If load tests justify it, move to a bounded worker pool or event-driven I/O while preserving per-session isolation and backpressure.</td>
+        <td>The accept loop creates a detached thread per accepted connection, a semaphore limits active connections to 50, and accepted sockets use a configurable idle read timeout (10 seconds by default).</td>
+        <td>Thread stacks and scheduling add overhead; slow clients can occupy a slot until their read times out. Increasing the limit alone would increase resource use rather than fix the architecture.</td>
+        <td>Add connection/worker occupancy metrics and consider per-IP connection caps. If load tests justify it, move to a bounded worker pool or event-driven I/O while preserving per-session isolation and backpressure.</td>
       </tr>
     </table>
     <p class="measure"><strong>How to verify a bottleneck:</strong> capture request latency percentiles, transaction throughput, WAL mutex wait and <code>fdatasync()</code> latency, ledger entries scanned per history request, worker/semaphore occupancy, and allocation scan lengths. Run repeatable tests at increasing concurrency and dataset sizes on the target filesystem. Compare before/after results and rerun crash-recovery, transfer-conservation, and session-isolation tests. The table describes code-derived pressure points; it does not substitute for those measurements.</p>
@@ -742,7 +742,7 @@ cd frontend &amp;&amp; npm install &amp;&amp; npm run dev</pre>
       <img src="connection-sessions.png" alt="Connection and identity-session lifecycle, including logout and disconnect cleanup" style="width:100%;height:auto">
       <figcaption>Identity guards are released on explicit logout or connection cleanup.</figcaption>
     </figure>
-    <p class="measure">The engine's session guard permits one active session per identity: customer identity is keyed by account and joint-owner slot; Employee and Manager have distinct role-qualified keys; Admin uses its own ID. A second login for the same identity is rejected. Explicit <code>LOGOUT</code> releases the guard before the reply is sent. A dropped socket releases it through worker cleanup. For browser sessions, the gateway closes an abandoned engine connection after 15 minutes idle; its reaper checks periodically, so the effective wait can be slightly longer. React stores the opaque token in tab-scoped <code>sessionStorage</code> so separate tabs do not replace each other's sessions.</p>
+    <p class="measure">The engine's session guard permits one active session per identity: customer identity is keyed by account and joint-owner slot; Employee and Manager have distinct role-qualified keys; Admin uses its own ID. A second login for the same identity is rejected. Explicit <code>LOGOUT</code> releases the guard before the reply is sent. A dropped or timed-out socket releases it through worker cleanup. The C engine closes idle client sockets after 10 seconds by default; the gateway has no separate idle TTL and removes its stale token mapping when a later request detects that the socket has expired. React clears the tab token and returns to login on that response.</p>
   </section>
 
   <section id="protocol-reference">

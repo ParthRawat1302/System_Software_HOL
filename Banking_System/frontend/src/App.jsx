@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LoginPage from "./LoginPage";
 import UserDashboard from "./UserDashboard";
 import EmployeeDashboard from "./EmployeeDashboard";
@@ -15,6 +15,14 @@ export default function App() {
     const savedRole = sessionStorage.getItem(ROLE_STORAGE_KEY);
     return VALID_ROLES.includes(savedRole) && api.hasSessionToken() ? savedRole : null;
   });
+
+  useEffect(() => {
+    function handleSessionExpired() {
+      setRole(null);
+    }
+    window.addEventListener("banking-session-expired", handleSessionExpired);
+    return () => window.removeEventListener("banking-session-expired", handleSessionExpired);
+  }, []);
 
   function handleLoggedIn(kind, staffRole) {
     const nextRole = kind === "STAFF" ? staffRole : kind;

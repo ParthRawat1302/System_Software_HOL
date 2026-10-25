@@ -16,6 +16,13 @@ function requestHeaders(extraHeaders = {}) {
   };
 }
 
+function clearExpiredSession() {
+  sessionToken = null;
+  sessionStorage.removeItem(SESSION_TOKEN_KEY);
+  sessionStorage.removeItem("banking_role");
+  window.dispatchEvent(new Event("banking-session-expired"));
+}
+
 // FastAPI returns two different shapes under `detail`: a plain string for
 // errors we raise ourselves (HTTPException), or an array of per-field
 // validation-error objects ({loc, msg, type, ...}) when a request body
@@ -44,6 +51,9 @@ async function call(path, options = {}) {
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 401 && path !== "/api/login" && path !== "/api/logout" && sessionToken) {
+      clearExpiredSession();
+    }
     throw new Error(formatErrorDetail(body.detail) || `request failed (${res.status})`);
   }
   return body;

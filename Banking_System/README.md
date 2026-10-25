@@ -104,7 +104,9 @@ Four of these deserve a sentence each:
 - **Semaphores** bound how many clients the server serves at once
   (`MAX_CONNECTIONS`, 50): `sem_wait()` gates every `accept()`, `sem_post()`
   runs when a client thread exits, so a connection flood queues in the
-  kernel's backlog instead of spawning unbounded threads.
+  kernel's backlog instead of spawning unbounded threads. Accepted engine
+  sockets also have a 10-second idle read timeout by default; set
+  `ENGINE_IDLE_TIMEOUT_SECONDS` to a positive number of seconds to override it.
 - **Recovery** uses a write-ahead log (WAL): each financial operation
   writes its before- and after-images durably before account and ledger
   files change. Startup recovery redoes committed operations and undoes
@@ -260,8 +262,8 @@ identity *before* the response is sent, so a client is guaranteed it can
 log back in immediately, with no race window. The gateway does not log out
 an existing engine session to make a duplicate login succeed. The React UI
 restores its role after a page refresh in the same tab; closing the browser
-without logging out leaves the session reserved until the 15-minute idle
-session reaper closes it.
+without logging out leaves the engine session reserved until the C engine's
+10-second idle socket timeout closes the connection.
 
 ## Transaction history
 
@@ -300,9 +302,12 @@ and fixed during development (each with a regression test in
   intentional, not a bug.)
 - **Unnecessary network exposure** — the engine listened on `0.0.0.0`;
   now `127.0.0.1` only.
-- **Abandoned browser sessions** leaking engine-side sockets — the
-  gateway now runs a background reaper that closes any session idle
-  more than 15 minutes.
+- **Abandoned engine connections** — the C engine closes client sockets
+  after 10 seconds idle by default. The gateway keeps only an in-memory
+  token-to-connection mapping; it clears entries on logout, replacement
+  login, or shutdown, not on an independent idle timer. If a request later
+  discovers that the engine expired its socket, the gateway removes the
+  stale mapping and the frontend returns to the login screen.
 - **Unbounded connection count** — an accept loop with no limit could be
   flooded into spawning unbounded threads. Closed by the connection-
   limiting semaphore described above.
@@ -367,4 +372,3 @@ curl -X POST http://localhost:8077/api/admin/accounts \
   WAL recovery, concurrency, code-based bottleneck analysis and practical
   future work, security findings, all protocol opcodes, authorization,
   and protocol invariants.
-

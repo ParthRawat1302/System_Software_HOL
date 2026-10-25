@@ -16,6 +16,7 @@
  * (see server_run() in server.c) -- bounds how many client threads can
  * exist at once, so a flood of connections can't exhaust memory/threads. */
 #define MAX_CONNECTIONS 50
+#define CLIENT_IDLE_TIMEOUT_SECONDS (10)
 
 #define DATA_DIR "data"
 #define ACCOUNTS_FILE  DATA_DIR "/accounts.dat"

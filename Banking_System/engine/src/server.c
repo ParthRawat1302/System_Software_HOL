@@ -11,16 +11,42 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/time.h>
 
 typedef struct {
     int fd;
 } ClientArg;
 
 static sem_t g_conn_sem;
+
+static int get_client_idle_timeout(long *seconds) {
+    const char *configured = getenv("ENGINE_IDLE_TIMEOUT_SECONDS");
+    if (!configured || !*configured) {
+        *seconds = CLIENT_IDLE_TIMEOUT_SECONDS;
+        return 0;
+    }
+
+    errno = 0;
+    char *end = NULL;
+    long value = strtol(configured, &end, 10);
+    if (errno == ERANGE || end == configured || *end != '\0' || value <= 0) {
+        fprintf(stderr, "invalid ENGINE_IDLE_TIMEOUT_SECONDS: %s\n", configured);
+        return -1;
+    }
+    *seconds = value;
+    return 0;
+}
+
+static int set_client_idle_timeout(int fd, long seconds) {
+    struct timeval timeout = { .tv_sec = seconds, .tv_usec = 0 };
+    return setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+}
+
 static void release_session_guard(ClientSession *sess) {
     if (!sess->guard_acquired) return;
     if (sess->role == SESSION_USER) {
@@ -76,6 +102,9 @@ static void *client_thread(void *arg) {
 }
 
 int server_run(void) {
+    long idle_timeout_seconds;
+    if (get_client_idle_timeout(&idle_timeout_seconds) != 0) return -1;
+
     if (sem_init(&g_conn_sem, 0, MAX_CONNECTIONS) != 0) {
         perror("sem_init");
         return -1;
@@ -113,7 +142,20 @@ int server_run(void) {
         int client_fd = accept(listen_fd, (struct sockaddr *)&client_addr, &client_len);
         if (client_fd < 0) { perror("accept"); sem_post(&g_conn_sem); continue; }
 
+        if (set_client_idle_timeout(client_fd, idle_timeout_seconds) != 0) {
+            perror("setsockopt(SO_RCVTIMEO)");
+            close(client_fd);
+            sem_post(&g_conn_sem);
+            continue;
+        }
+
         ClientArg *carg = malloc(sizeof(ClientArg));
+        if (!carg) {
+            perror("malloc");
+            close(client_fd);
+            sem_post(&g_conn_sem);
+            continue;
+        }
         carg->fd = client_fd;
 
         pthread_t tid;
